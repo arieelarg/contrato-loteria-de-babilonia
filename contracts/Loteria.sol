@@ -21,16 +21,11 @@ contract Lottery is ERC721URIStorage {
 
     uint ticketPrice = 0.0001 ether;
 
-    uint minimumPlayersRequired = 1;
+    uint playersRequired = 1;
 
     string base_url_token_uri = "https://gateway.pinata.cloud/ipfs/";
 
-    struct Participant {
-        address participant;
-        uint256 timestamp;
-    }
-
-    Participant[] participants;
+    address[] participants;
 
     modifier onlyOwner {
         require(msg.sender == owner, "Only the owner can call this function");
@@ -52,7 +47,7 @@ contract Lottery is ERC721URIStorage {
 
         uint256 newTicket;
 
-        participants.push(Participant(msg.sender, block.timestamp));
+        participants.push(msg.sender);
 
         // newTicket = mint(string.concat(base_url_token_uri, Strings.toString(getParticipantsCount())));
 
@@ -67,7 +62,7 @@ contract Lottery is ERC721URIStorage {
     }
 
     function getWinner() public onlyOwner returns (address winner) {
-        require(getParticipantsCount() > minimumPlayersRequired, "There isn't enough players yet");
+        require(getParticipantsCount() > playersRequired, "There isn't enough players yet");
 
         uint index = seed % getParticipantsCount();
 
@@ -79,7 +74,7 @@ contract Lottery is ERC721URIStorage {
             "Trying to withdraw more money than the contract has."
         );
 
-//        (bool success, ) = ().call{value: prizeAmount}("");
+        (bool success, ) = (participants[index]).call{value: prizeAmount}("");
 
         require(success, "Failed to withdraw money from contract.");
     }
