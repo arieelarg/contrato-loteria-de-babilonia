@@ -40,8 +40,6 @@ contract Lottery is ERC721URIStorage {
         return newItemId;
     }
 
-        // https://gateway.pinata.cloud/ipfs/QmckcPnetubtJ1MqbTbCWaZQGVTNVGoCPNs6dppRRP9YMe
-
     function buyTicket() public payable returns (uint256) {
         require(msg.value == ticketPrice, "Must pay 1USD");
 
@@ -66,21 +64,26 @@ contract Lottery is ERC721URIStorage {
 
         uint index = seed % getParticipantsCount();
 
+        address winnerAddress = participants[index];
 
-        uint256 prizeAmount = address(this).balance;
+        uint256 prizeAmount = address(this).balance * 75 / 100;
 
         require(
             prizeAmount <= address(this).balance,
             "Trying to withdraw more money than the contract has."
         );
 
-        (bool success, ) = (participants[index]).call{value: prizeAmount}("");
+        (bool success, ) = (winnerAddress).call{value: prizeAmount}("");
 
         require(success, "Failed to withdraw money from contract.");
+
+        return winnerAddress;
     }
 
     function resetLottery() public onlyOwner {
-        
+        require(getParticipantsCount() <= 0, "Lottery is already empty");
+
+        delete participants;
     }
     
 }
