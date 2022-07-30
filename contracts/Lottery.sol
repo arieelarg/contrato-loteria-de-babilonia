@@ -11,9 +11,16 @@ error Lottery__NotEnoughPlayersToShowAmount();
 error Lottery__NotEnoughPlayersToPickWinner();
 error Lottery__TransferFailed();
 error Lottery__AlreadyEmpty();
+error Lottery__NotOpen();
 
 /** @title Loteria de Babilonia */
 contract Lottery is VRFConsumerBaseV2, Ownable {
+    /* Type declarations */
+    enum LotteryState {
+        OPEN,
+        CALCULATING
+    }
+
     // Chainlink VRF variables
     VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     bytes32 private immutable i_gasLane;
@@ -27,6 +34,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     uint256 private immutable i_playersRequired;
     address payable[] private s_players;
     address private s_lastWinner;
+    LotteryState private s_lotteryState;
 
     // Events
     event RequestedWinner(uint256 indexed requestId);
@@ -44,6 +52,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         // Lottery variables
         i_ticketPrice = ticketPrice;
         i_playersRequired = playersRequired;
+        s_lotteryState = LotteryState.OPEN;
 
         // Chainlink VRF variables
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
@@ -57,14 +66,20 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
             revert Lottery__SendMoreETHToEnterLottery(msg.value);
         }
 
+        if (s_lotteryState != LotteryState.OPEN) {
+            revert Lottery__NotOpen();
+        }
+
         s_players.push(payable(msg.sender));
         emit EnterLottery(msg.sender);
     }
 
     function getRandomWinner() external onlyOwner {
-        if (getPlayersCount() > i_playersRequired) {
+        if (getNumberOfPlayers() > i_playersRequired) {
             revert Lottery__NotEnoughPlayersToPickWinner();
         }
+
+        s_lotteryState = LotteryState.CALCULATING;
 
         uint256 winnerId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
@@ -75,13 +90,16 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         );
 
         address payable lastWinner = s_players[winnerId];
+
         s_lastWinner = lastWinner;
+
+        s_lotteryState = LotteryState.OPEN;
 
         emit RequestedWinner(winnerId);
 
-        uint256 prizeAmount = getPrizeAmount();
+        uint256 prize = getPrize();
 
-        (bool success, ) = lastWinner.call{value: prizeAmount}("");
+        (bool success, ) = lastWinner.call{value: prize}("");
 
         if (!success) {
             revert Lottery__TransferFailed();
@@ -97,31 +115,49 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256[] memory randomWords
     ) internal override {}
 
-    function getLastWinner() public view returns (address) {
-        return s_lastWinner;
-    }
-
-    function resetLottery() private {
-        if (getPlayersCount() <= 0) {
+    function resetLottery() internal {
+        if (getNumberOfPlayers() <= 0) {
             revert Lottery__AlreadyEmpty();
         }
 
-        delete s_players;
+        s_players = new address payable[](0);
     }
 
-    function getPrizeAmount() public view returns (uint256) {
-        if (getPlayersCount() <= 0) {
+    /** Getters */
+
+    function getPrize() public view returns (uint256) {
+        if (getNumberOfPlayers() <= 0) {
             revert Lottery__NotEnoughPlayersToShowAmount();
         }
 
         return (address(this).balance * 75) / 100;
     }
 
+    function getLastWinner() public view returns (address) {
+        return s_lastWinner;
+    }
+
     function getPlayer(uint256 index) public view returns (address) {
         return s_players[index];
     }
 
-    function getPlayersCount() public view returns (uint256) {
+    function getNumberOfPlayers() public view returns (uint256) {
         return s_players.length;
+    }
+
+    function getLotteryState() public view returns (LotteryState) {
+        return s_lotteryState;
+    }
+
+    function getNumWords() public pure returns (uint256) {
+        return NUM_WORDS;
+    }
+
+    function getTicketPrice() public view returns (uint256) {
+        return i_ticketPrice;
+    }
+
+    function getRequestConfirmations() public pure returns (uint256) {
+        return REQUEST_CONFIRMATIONS;
     }
 }
