@@ -4,16 +4,17 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
-error Lottery__SendMoreETHToEnterLottery();
+// List of errors
+error Lottery__SendMoreETHToEnterLottery(uint256 amount);
 error Lottery__NotEnoughPlayersToShowAmount();
 error Lottery__NotEnoughPlayersToPickWinner();
 error Lottery__TransferFailed();
 error Lottery__AlreadyEmpty();
 
+/** @title Loteria de Babilonia */
 contract Lottery is VRFConsumerBaseV2, Ownable {
-    // Chainlink VRF Variables
+    // Chainlink VRF variables
     VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
@@ -21,11 +22,11 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     uint32 private immutable i_callbackGasLimit;
     uint32 private constant NUM_WORDS = 1;
 
-    // Variables
+    // Lottery variables
     uint256 private immutable i_ticketPrice;
     uint256 private immutable i_playersRequired;
     address payable[] private s_players;
-    address private s_recentWinner;
+    address private s_lastWinner;
 
     // Events
     event RequestedWinner(uint256 indexed requestId);
@@ -40,6 +41,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256 ticketPrice,
         uint256 playersRequired
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
+        // Lottery variables
         i_ticketPrice = ticketPrice;
         i_playersRequired = playersRequired;
 
@@ -52,7 +54,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
     function buyTicket() public payable {
         if (msg.value < i_ticketPrice) {
-            revert Lottery__SendMoreETHToEnterLottery();
+            revert Lottery__SendMoreETHToEnterLottery(msg.value);
         }
 
         s_players.push(payable(msg.sender));
@@ -72,20 +74,20 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
             NUM_WORDS
         );
 
-        address payable recentWinner = s_players[winnerId];
-        s_recentWinner = recentWinner;
+        address payable lastWinner = s_players[winnerId];
+        s_lastWinner = lastWinner;
 
         emit RequestedWinner(winnerId);
 
         uint256 prizeAmount = getPrizeAmount();
 
-        (bool success, ) = recentWinner.call{value: prizeAmount}("");
+        (bool success, ) = lastWinner.call{value: prizeAmount}("");
 
         if (!success) {
             revert Lottery__TransferFailed();
         }
 
-        emit WinnerPicked(recentWinner);
+        emit WinnerPicked(lastWinner);
 
         resetLottery();
     }
@@ -95,8 +97,8 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256[] memory randomWords
     ) internal override {}
 
-    function getRecentWinner() public view returns (address) {
-        return s_recentWinner;
+    function getLastWinner() public view returns (address) {
+        return s_lastWinner;
     }
 
     function resetLottery() private {
