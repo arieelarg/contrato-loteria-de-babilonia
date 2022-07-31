@@ -75,13 +75,15 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                   const tx = await lottery.getRandomWinner()
                   const txReceipt = await tx.wait(1)
-                  const request = await vrfCoordinatorV2Mock.fulfillRandomWords(
+                  const vrfCoordinatorV2Request = await vrfCoordinatorV2Mock.fulfillRandomWords(
                       txReceipt.events[1].args.requestId,
                       lottery.address
                   )
 
                   // Wait for WinnerPicked event to emit
-                  await expect(request).to.emit(lottery, "WinnerPicked").withArgs(deployer)
+                  await expect(vrfCoordinatorV2Request)
+                      .to.emit(lottery, "WinnerPicked")
+                      .withArgs(deployer)
 
                   // Get last winner
                   const lastWinner = await lottery.getLastWinner()
