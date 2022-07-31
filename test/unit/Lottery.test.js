@@ -12,7 +12,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
           // Lottery methods being tested
           const buyTicket = (value = ticketPrice) => lottery.buyTicket({ value })
-          const getBalance = (address) => waffle.provider.getBalance(address)
+          //   const getBalance = (address) => waffle.provider.getBalance(address)
           const getRandomWinner = () => lottery.getRandomWinner()
           const getNumberOfPlayers = () => lottery.getNumberOfPlayers()
           const getLotteryState = () => lottery.getLotteryState()
@@ -82,23 +82,23 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                   // Attempt 1
                   //   await new Promise(async (resolve, reject) => {
-                  //       lottery.once("WinnerPicked", async () => {
-                  //           console.log("WinnerPicked fired!")
-                  //           try {
-                  //               const winner = await getWinner()
-                  //               const lotteryState = await getLotteryState()
-                  //               const winnerBalance = await getBalance(accounts[3])
-                  //               const prize = await getPrize()
-                  //               await expect(getPlayer(0)).to.be.reverted
-                  //               assert.equal(winner.toString(), accounts[3].address.toString())
-                  //               assert.equal(lotteryState, 0)
-                  //               assert.equal(winnerBalance.toString(), startingBalance.add(prize))
-                  //               resolve()
-                  //           } catch (e) {
-                  //               console.log("TODOMAL")
-                  //               reject(e)
-                  //           }
-                  //       })
+                  //   lottery.once("WinnerPicked", async () => {
+                  //       console.log("WinnerPicked fired!")
+                  //       try {
+                  //           const winner = await getWinner()
+                  //           const lotteryState = await getLotteryState()
+                  //           const winnerBalance = await getBalance(winner)
+                  //           const prize = await getPrize()
+                  //           await expect(getPlayer(0)).to.be.reverted
+                  //           assert.equal(winner.toString(), accounts[3].address.toString())
+                  //           assert.equal(lotteryState, 0)
+                  //           assert.equal(winnerBalance.toString(), startingBalance.add(prize))
+                  //           resolve()
+                  //       } catch (e) {
+                  //           console.log("TODOMAL")
+                  //           reject(e)
+                  //       }
+                  //   })
 
                   //       const tx = await getRandomWinner()
                   //       const txReceipt = await tx.wait()
@@ -126,7 +126,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   const prize = await getPrize()
 
                   // Get winner balance before token transfer
-                  const winnerStartingBalance = await getBalance(accounts[3].address)
+                  //   const winnerStartingBalance = await getBalance(accounts[3].address)
 
                   const tx = await getRandomWinner()
                   const txReceipt = await tx.wait(1)
@@ -143,12 +143,12 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       .to.emit(lottery, "WinnerPicked")
                       .withArgs(winner)
 
-                  // Winner balance should update with prize
                   await expect(vrfCoordinatorV2Request)
                       .to.emit(lottery, "PrizeTransfered")
                       .withArgs(winner, prize)
 
-                  const winnerBalance = await getBalance(winner)
+                  // Winner balance should update with prize
+                  //   const winnerBalance = await getBalance(winner)
 
                   // AssertionError: expected '9999999830830929386306' to equal '9999999919199179035106'
                   //   assert.equal(
