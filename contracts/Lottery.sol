@@ -86,9 +86,9 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
-            REQUEST_CONFIRMATIONS,
+            getRequestConfirmations(),
             i_callbackGasLimit,
-            NUM_WORDS
+            getNumWords()
         );
 
         emit RequestedWinner(requestId);
@@ -98,9 +98,9 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256, /*requestId*/
         uint256[] memory randomWords
     ) internal override {
-        uint256 winnerIndex = randomWords[0] % s_players.length;
+        uint256 winnerIndex = randomWords[0] % getNumberOfPlayers();
 
-        address payable lastWinner = s_players[winnerIndex];
+        address payable lastWinner = getPlayers()[winnerIndex];
 
         s_lastWinner = lastWinner;
 
@@ -153,7 +153,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         return s_lotteryState;
     }
 
-    function getNumWords() public pure returns (uint256) {
+    function getNumWords() public pure returns (uint32) {
         return NUM_WORDS;
     }
 
@@ -161,7 +161,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         return i_ticketPrice;
     }
 
-    function getRequestConfirmations() public pure returns (uint256) {
+    function getRequestConfirmations() public pure returns (uint16) {
         return REQUEST_CONFIRMATIONS;
     }
 
