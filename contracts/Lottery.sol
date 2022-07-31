@@ -83,7 +83,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
         s_lotteryState = LotteryState.CALCULATING;
 
-        uint256 winnerId = i_vrfCoordinator.requestRandomWords(
+        uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
@@ -91,7 +91,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
             NUM_WORDS
         );
 
-        emit RequestedWinner(winnerId);
+        emit RequestedWinner(requestId);
     }
 
     function fulfillRandomWords(
