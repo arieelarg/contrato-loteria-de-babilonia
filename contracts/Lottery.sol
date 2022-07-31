@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "hardhat/console.sol";
 
 // List of errors
-error Lottery__SendMoreETHToEnterLottery(uint256 amount);
-error Lottery__NotEnoughPlayersToShowAmount();
-error Lottery__NotEnoughPlayersToPickWinner(uint256 playersCount, uint256 playersRequired);
-error Lottery__TransferFailed();
-error Lottery__AlreadyEmpty();
-error Lottery__NotOpen();
+error sendMoreETHToEnterLottery(uint256 amount);
+error notEnoughPlayersToShowAmount();
+error notEnoughPlayersToPickWinner(uint256 playersCount, uint256 playersRequired);
+error transferFailed();
+error alreadyEmpty();
+error notOpen();
 
 /** @title Loteria de Babilonia */
-contract Lottery is VRFConsumerBaseV2, Ownable {
+contract Lottery is VRFConsumerBaseV2 {
     /* Type declarations */
     enum LotteryState {
         OPEN,
@@ -34,13 +33,14 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     uint256 private immutable i_ticketPrice;
     uint256 private immutable i_playersRequired;
     address payable[] private s_players;
-    address private s_lastWinner;
+    address private s_winner;
     LotteryState private s_lotteryState;
 
     // Events
     event RequestedWinner(uint256 indexed requestId);
     event EnterLottery(address indexed player);
     event WinnerPicked(address indexed player);
+    event PrizeTransfered(address winner, uint256 prize);
 
     constructor(
         address vrfCoordinatorV2,
@@ -64,11 +64,11 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
     function buyTicket() public payable {
         if (msg.value < i_ticketPrice) {
-            revert Lottery__SendMoreETHToEnterLottery(msg.value);
+            revert sendMoreETHToEnterLottery(msg.value);
         }
 
         if (s_lotteryState != LotteryState.OPEN) {
-            revert Lottery__NotOpen();
+            revert notOpen();
         }
 
         s_players.push(payable(msg.sender));
@@ -76,9 +76,9 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         emit EnterLottery(msg.sender);
     }
 
-    function getRandomWinner() external onlyOwner {
+    function getRandomWinner() external {
         if (s_players.length < i_playersRequired) {
-            revert Lottery__NotEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
+            revert notEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
         }
 
         s_lotteryState = LotteryState.CALCULATING;
@@ -100,19 +100,21 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     ) internal override {
         uint256 winnerIndex = randomWords[0] % s_players.length;
 
-        address payable lastWinner = s_players[winnerIndex];
+        address payable winner = s_players[winnerIndex];
 
-        s_lastWinner = lastWinner;
+        s_winner = winner;
 
-        emit WinnerPicked(lastWinner);
+        emit WinnerPicked(winner);
 
         uint256 prize = getPrize();
 
-        (bool success, ) = lastWinner.call{value: prize}("");
+        (bool success, ) = s_winner.call{value: prize}("");
 
         if (!success) {
-            revert Lottery__TransferFailed();
+            revert transferFailed();
         }
+
+        emit PrizeTransfered(winner, prize);
 
         resetLottery();
 
@@ -121,7 +123,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
     function resetLottery() internal {
         if (s_players.length <= 0) {
-            revert Lottery__AlreadyEmpty();
+            revert alreadyEmpty();
         }
 
         s_players = new address payable[](0);
@@ -131,14 +133,14 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
     function getPrize() public view returns (uint256) {
         if (s_players.length <= 0) {
-            revert Lottery__NotEnoughPlayersToShowAmount();
+            revert notEnoughPlayersToShowAmount();
         }
 
         return (address(this).balance * 75) / 100;
     }
 
-    function getLastWinner() public view returns (address) {
-        return s_lastWinner;
+    function getWinner() public view returns (address) {
+        return s_winner;
     }
 
     function getPlayer(uint256 index) public view returns (address) {
