@@ -11,11 +11,11 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
           const config = networkConfig[chainId]
 
           beforeEach(async () => {
-              deployer = (await getNamedAccounts()).deployer
+              deployer = (await getNamedAccounts()).deployer // same as doing await ethers.getSigners()[0]
               await deployments.fixture(["all"])
               lottery = await ethers.getContract("Lottery")
               ticketPrice = await lottery.getTicketPrice()
-              vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock", deployer)
+              vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
           })
 
           const buyTicket = async (value = ticketPrice) => await lottery.buyTicket({ value })
