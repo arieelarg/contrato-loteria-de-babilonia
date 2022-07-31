@@ -77,8 +77,8 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     }
 
     function getRandomWinner() external onlyOwner {
-        if (getNumberOfPlayers() < i_playersRequired) {
-            revert Lottery__NotEnoughPlayersToPickWinner(getNumberOfPlayers(), i_playersRequired);
+        if (s_players.length < i_playersRequired) {
+            revert Lottery__NotEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
         }
 
         s_lotteryState = LotteryState.CALCULATING;
@@ -86,9 +86,9 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
-            getRequestConfirmations(),
+            REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
-            getNumWords()
+            NUM_WORDS
         );
 
         emit RequestedWinner(requestId);
@@ -98,9 +98,9 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         uint256, /*requestId*/
         uint256[] memory randomWords
     ) internal override {
-        uint256 winnerIndex = randomWords[0] % getNumberOfPlayers();
+        uint256 winnerIndex = randomWords[0] % s_players.length;
 
-        address payable lastWinner = getPlayers()[winnerIndex];
+        address payable lastWinner = s_players[winnerIndex];
 
         s_lastWinner = lastWinner;
 
@@ -120,7 +120,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     }
 
     function resetLottery() internal {
-        if (getNumberOfPlayers() <= 0) {
+        if (s_players.length <= 0) {
             revert Lottery__AlreadyEmpty();
         }
 
@@ -130,7 +130,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     /** Getters */
 
     function getPrize() public view returns (uint256) {
-        if (getNumberOfPlayers() <= 0) {
+        if (s_players.length <= 0) {
             revert Lottery__NotEnoughPlayersToShowAmount();
         }
 
@@ -153,16 +153,8 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         return s_lotteryState;
     }
 
-    function getNumWords() public pure returns (uint32) {
-        return NUM_WORDS;
-    }
-
     function getTicketPrice() public view returns (uint256) {
         return i_ticketPrice;
-    }
-
-    function getRequestConfirmations() public pure returns (uint16) {
-        return REQUEST_CONFIRMATIONS;
     }
 
     function getPlayersRequired() public view returns (uint256) {
