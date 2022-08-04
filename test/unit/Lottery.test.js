@@ -10,17 +10,6 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
           const { chainId } = network.config
           const config = networkConfig[chainId]
 
-          // Lottery methods being tested
-          const buyTicket = (value = ticketPrice) => lottery.buyTicket({ value })
-          //   const getBalance = (address) => waffle.provider.getBalance(address)
-          const getRandomWinner = () => lottery.getRandomWinner()
-          const getNumberOfPlayers = () => lottery.getNumberOfPlayers()
-          const getLotteryState = () => lottery.getLotteryState()
-          const getWinner = () => lottery.getWinner()
-          // const getPlayer = (index) => lottery.getPlayer(index)
-          const getPrize = () => lottery.getPrize()
-          const getTicketPrice = () => lottery.getTicketPrice()
-
           beforeEach(async () => {
               accounts = await ethers.getSigners()
               deployer = accounts[0]
@@ -31,9 +20,21 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
               lotteryContract = await ethers.getContract("Lottery")
               lottery = await lotteryContract.connect(player)
 
-              ticketPrice = await getTicketPrice()
+              ticketPrice = await lottery.getTicketPrice()
               vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
           })
+
+          // Lottery methods being tested
+          const buyTicket = (value = ticketPrice) => lottery.buyTicket({ value })
+          const getBalance = (address) => waffle.provider.getBalance(address)
+          const getRandomWinner = () => lottery.getRandomWinner()
+          const getNumberOfPlayers = () => lottery.getNumberOfPlayers()
+          const getLotteryState = () => lottery.getLotteryState()
+          const getWinner = () => lottery.getWinner()
+          // const getPlayer = (index) => lottery.getPlayer(index)
+          const getPrize = () => lottery.getPrize()
+          const getTicketPrice = () => lottery.getTicketPrice()
+          const getPlayers = () => lottery.getPlayers()
 
           describe("constructor", () => {
               it("initializates the lottery", async () => {
@@ -47,7 +48,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
           describe("enterLottery", () => {
               it("reverts when not paid enough", async () => {
-                  await expect(buyTicket(0)).to.be.revertedWith("sendMoreETHToEnterLottery")
+                  await expect(buyTicket({ value: 0 })).to.be.revertedWith(
+                      "sendMoreETHToEnterLottery"
+                  )
               })
 
               it("record players when they enter", async () => {
@@ -66,48 +69,12 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   await buyTicket()
               })
 
-              it("doesn't allow entrance when lottery is calculating", async () => {
-                  await getRandomWinner()
-                  expect(buyTicket()).to.be.revertedWith("notOpen")
-              })
-
               it("picks a winner, resets, and sends money", async () => {
-                  const additionalTickets = 3
-                  const startingIndex = 1
+                  const player2 = lotteryContract.connect(accounts[2])
+                  await player2.buyTicket({ value: ticketPrice })
 
-                  for (let i = startingIndex; i < startingIndex + additionalTickets; i++) {
-                      lottery = lotteryContract.connect(accounts[i])
-                      await buyTicket()
-                  }
-
-                  // Attempt 1
-                  //   await new Promise(async (resolve, reject) => {
-                  //   lottery.once("WinnerPicked", async () => {
-                  //       console.log("WinnerPicked fired!")
-                  //       try {
-                  //           const winner = await getWinner()
-                  //           const lotteryState = await getLotteryState()
-                  //           const winnerBalance = await getBalance(winner)
-                  //           const prize = await getPrize()
-                  //           await expect(getPlayer(0)).to.be.reverted
-                  //           assert.equal(winner.toString(), accounts[3].address.toString())
-                  //           assert.equal(lotteryState, 0)
-                  //           assert.equal(winnerBalance.toString(), startingBalance.add(prize))
-                  //           resolve()
-                  //       } catch (e) {
-                  //           console.log("TODOMAL")
-                  //           reject(e)
-                  //       }
-                  //   })
-
-                  //       const tx = await getRandomWinner()
-                  //       const txReceipt = await tx.wait()
-                  //       const startingBalance = await getBalance(accounts[3])
-                  //       await vrfCoordinatorV2Mock.fulfillRandomWords(
-                  //           txReceipt.events[1].args.requestId,
-                  //           lottery.address
-                  //       )
-                  //   })
+                  // Get winner balance before token transfer
+                  const winnerStartingBalance = await getBalance(accounts[2].address) // winner
 
                   /** Attempt 2 */
                   // LotteryState should be OPEN
@@ -124,9 +91,10 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                   // Get prize
                   const prize = await getPrize()
-
-                  // Get winner balance before token transfer
-                  //   const winnerStartingBalance = await getBalance(accounts[3].address)
+                  assert.equal(
+                      prize.toString(),
+                      (((await getTicketPrice()) * 2 * 75) / 100).toString()
+                  )
 
                   const tx = await getRandomWinner()
                   const txReceipt = await tx.wait(1)
@@ -137,6 +105,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
                   // Get winner
                   const winner = await getWinner()
+                  assert.equal(winner.toString(), accounts[2].address)
 
                   // Wait for WinnerPicked event to emit
                   await expect(vrfCoordinatorV2Request)
@@ -148,13 +117,12 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       .withArgs(winner, prize)
 
                   // Winner balance should update with prize
-                  //   const winnerBalance = await getBalance(winner)
+                  const winnerBalance = await getBalance(winner)
 
-                  // AssertionError: expected '9999999830830929386306' to equal '9999999919199179035106'
-                  //   assert.equal(
-                  //       winnerBalance.toString(),
-                  //       winnerStartingBalance.add(prize).toString()
-                  //   )
+                  assert.equal(
+                      winnerBalance.toString(),
+                      winnerStartingBalance.add(prize).toString()
+                  )
 
                   // Lottery should reset
                   assert.equal(await getNumberOfPlayers(), "0")
