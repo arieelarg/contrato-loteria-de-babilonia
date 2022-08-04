@@ -12,6 +12,7 @@ error notEnoughPlayersToPickWinner(uint256 playersCount, uint256 playersRequired
 error transferFailed();
 error alreadyEmpty();
 error notOpen();
+error noWinnerPresent();
 
 /** @title Loteria de Babilonia */
 contract Lottery is VRFConsumerBaseV2 {
@@ -100,11 +101,9 @@ contract Lottery is VRFConsumerBaseV2 {
     ) internal override {
         uint256 winnerIndex = randomWords[0] % s_players.length;
 
-        address payable winner = s_players[winnerIndex];
+        s_winner = s_players[winnerIndex];
 
-        s_winner = winner;
-
-        emit WinnerPicked(winner);
+        emit WinnerPicked(s_winner);
 
         uint256 prize = getPrize();
 
@@ -114,7 +113,7 @@ contract Lottery is VRFConsumerBaseV2 {
             revert transferFailed();
         }
 
-        emit PrizeTransfered(winner, prize);
+        emit PrizeTransfered(s_winner, prize);
 
         resetLottery();
 
