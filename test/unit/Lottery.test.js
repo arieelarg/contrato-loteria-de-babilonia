@@ -48,9 +48,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
           describe("enterLottery", () => {
               it("reverts when not paid enough", async () => {
-                  await expect(buyTicket({ value: 0 })).to.be.revertedWith(
-                      "sendMoreETHToEnterLottery"
-                  )
+                  await expect(buyTicket(0)).to.be.revertedWith("sendMoreETHToEnterLottery")
               })
 
               it("record players when they enter", async () => {
@@ -76,7 +74,6 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   // Get winner balance before token transfer
                   const winnerStartingBalance = await getBalance(accounts[2].address) // winner
 
-                  /** Attempt 2 */
                   // LotteryState should be OPEN
                   assert.equal(await getLotteryState(), "0")
 
