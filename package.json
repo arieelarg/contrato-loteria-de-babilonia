@@ -1,7 +1,7 @@
 {
     "name": "loteria-de-babilonia",
-    "version": "0.0.0",
-    "description": "",
+    "version": "0.1.0",
+    "description": "Lotería de Babilonia",
     "main": "index.js",
     "scripts": {
         "ci": "rm -rf node_modules/ package-lock.json && npm i --legacy-peer-deps",
