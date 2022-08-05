@@ -4,6 +4,7 @@ const {
     developmentChains,
     VERIFICATION_BLOCK_CONFIRMATIONS,
 } = require("../helper-hardhat-config")
+const { verify } = require("../utils/verify")
 
 const FUND_AMOUNT = "1000000000000000000000"
 
@@ -47,6 +48,12 @@ module.exports = async () => {
             ? 1
             : VERIFICATION_BLOCK_CONFIRMATIONS,
     })
+
+    // Verify the deployment
+    if (!developmentChains.includes(network.name) && process.env.RINKEBY_ETHERSCAN_API_KEY) {
+        log("Verifying...")
+        await verify(lottery.address, args)
+    }
 
     log("Enter lottery with command:")
     const networkName = network.name == "hardhat" ? "localhost" : network.name
