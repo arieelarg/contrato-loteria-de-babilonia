@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // List of errors
 error sendMoreETHToEnterLottery(uint256 amount);
@@ -30,6 +31,7 @@ contract Lottery is VRFConsumerBaseV2 {
     uint32 private constant NUM_WORDS = 1;
 
     // Lottery variables
+    using SafeMath for uint256;
     uint256 private immutable i_ticketPrice;
     uint256 private immutable i_playersRequired;
     address payable[] private s_players;
@@ -79,6 +81,10 @@ contract Lottery is VRFConsumerBaseV2 {
     function getRandomWinner() external {
         if (s_players.length < i_playersRequired) {
             revert notEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
+        }
+
+        if (s_lotteryState != LotteryState.OPEN) {
+            revert notOpen();
         }
 
         s_lotteryState = LotteryState.CALCULATING;
@@ -134,7 +140,9 @@ contract Lottery is VRFConsumerBaseV2 {
             revert notEnoughPlayersToShowAmount();
         }
 
-        return (address(this).balance * 75) / 100;
+        uint256 balance = address(this).balance;
+
+        return balance.mul(75).div(100);
     }
 
     function getWinner() public view returns (address) {

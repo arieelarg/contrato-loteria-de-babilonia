@@ -4,7 +4,7 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
 
 !developmentChains.includes(network.name)
     ? describe.skip
-    : describe("Lottery Unit Test", () => {
+    : describe("Lottery Unit Tests", () => {
           let lottery, vrfCoordinatorV2Mock, ticketPrice, accounts, player
 
           const { chainId } = network.config
@@ -76,14 +76,14 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   // LotteryState should be OPEN
                   assert.equal(await getLotteryState(), "0")
 
-                  // Requesting random winner
-                  await getRandomWinner()
+                  //   // Requesting random winner
+                  //   await getRandomWinner()
 
-                  // LotteryState should be CALCULATING
-                  assert.equal(await getLotteryState(), "1")
+                  //   // LotteryState should be CALCULATING
+                  //   assert.equal(await getLotteryState(), "1")
 
-                  // While CALCULATING random winner should emit RequestedWinner event
-                  await expect(getRandomWinner()).to.emit(lottery, "RequestedWinner")
+                  //   //   While CALCULATING random winner should emit RequestedWinner event
+                  //   await expect(getRandomWinner()).to.emit(lottery, "RequestedWinner")
 
                   // Get prize
                   const prize = await getPrize()
@@ -99,9 +99,6 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                       lottery.address
                   )
 
-                  // Check winner
-                  assert.equal(await getWinner(), winner.address)
-
                   // Wait for WinnerPicked event to emit
                   await expect(vrfCoordinatorV2Request)
                       .to.emit(lottery, "WinnerPicked")
@@ -110,6 +107,9 @@ const { developmentChains, networkConfig } = require("../../helper-hardhat-confi
                   await expect(vrfCoordinatorV2Request)
                       .to.emit(lottery, "PrizeTransfered")
                       .withArgs(winner.address, prize)
+
+                  // Check winner
+                  assert.equal(await getWinner(), winner.address)
 
                   // Winner balance should update with prize
                   const winnerBalance = await getBalance(winner.address)
