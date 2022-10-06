@@ -40,7 +40,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
     // Events
     event RequestedWinner(uint256 indexed requestId);
-    event EnterLottery(address indexed player);
+    event EnterLottery();
     event WinnerPicked(address indexed player);
     event PrizeTransfered(address winner, uint256 prize);
 
@@ -75,9 +75,10 @@ contract Lottery is VRFConsumerBaseV2 {
 
         s_players.push(payable(msg.sender));
 
-        emit EnterLottery(msg.sender);
+        emit EnterLottery();
     }
 
+    // @audit-it why is this public? i think it will be better if this were onlyOwner
     function getRandomWinner() external {
         if (s_players.length < i_playersRequired) {
             revert notEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
@@ -89,6 +90,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
         s_lotteryState = LotteryState.CALCULATING;
 
+        // @audit-it Do I need to create a fallback to prevent getting lottery stuck in state == CALCULATING?
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -112,7 +114,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
         uint256 prize = getPrize();
 
-        (bool success, ) = s_winner.call{value: prize}("");
+        (bool success, ) = s_winner.call{value: prize}(""); // @audit-it Replace with transfer() to prevent reentrancy attack
 
         if (!success) {
             revert transferFailed();
@@ -134,7 +136,6 @@ contract Lottery is VRFConsumerBaseV2 {
     }
 
     /** Getters */
-
     function getPrize() public view returns (uint256) {
         if (s_players.length <= 0) {
             revert notEnoughPlayersToShowAmount();

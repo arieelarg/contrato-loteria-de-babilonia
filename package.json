@@ -5,11 +5,11 @@
     "main": "index.js",
     "scripts": {
         "ci": "rm -rf node_modules/ package-lock.json && npm i --legacy-peer-deps",
-        "test:rinkeby": "hh test --network rinkeby",
+        "test:goerli": "hh test --network goerli",
         "test": "hh test",
         "test:coverage": "yarn hardhat coverage",
         "deploy:localhost": "hh deploy --network localhost",
-        "deploy:rinkeby": "hh deploy --network rinkeby",
+        "deploy:goerli": "hh deploy --network goerli",
         "deploy:mainnet": "hh deploy --network mainnet",
         "lint": "yarn solhint 'contracts/**/*.sol'",
         "fix:lint": "yarn solhint 'contracts/**/*.sol' --fix",

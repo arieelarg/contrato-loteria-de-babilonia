@@ -5,10 +5,11 @@ require("solidity-coverage")
 require("hardhat-contract-sizer")
 require("dotenv").config()
 
-const RINKEBY_RPC_URL = process.env.RINKEBY_RPC_URL
+const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL
 const ALCHEMY_PRIVATE_KEY = [process.env.ALCHEMY_PRIVATE_KEY]
 const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL
-const RINKEBY_ETHERSCAN_API_KEY = process.env.RINKEBY_ETHERSCAN_API_KEY
+const MAINNET_ETHERSCAN_API_KEY = process.env.MAINNET_ETHERSCAN_API_KEY
+const GOERLI_ETHERSCAN_API_KEY = process.env.GOERLI_ETHERSCAN_API_KEY
 const POLYGONSCAN_ETHERSCAN_API_KEY = process.env.POLYGONSCAN_ETHERSCAN_API_KEY
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -19,10 +20,10 @@ module.exports = {
             chainId: 31337,
             blockConfirmations: 1,
         },
-        rinkeby: {
-            chainId: 4,
+        goerli: {
+            chainId: 5,
             blockConfirmations: 6,
-            url: RINKEBY_RPC_URL,
+            url: GOERLI_RPC_URL,
             accounts: ALCHEMY_PRIVATE_KEY,
         },
         mainnet: {
@@ -33,9 +34,10 @@ module.exports = {
     },
     etherscan: {
         apiKey: {
-            // "verify:rinkeby": "yarn hardhat verify --network rinkeby <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>",
-            rinkeby: RINKEBY_ETHERSCAN_API_KEY,
+            // "verify:goerli": "yarn hardhat verify --network goerli <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>",
+            goerli: GOERLI_ETHERSCAN_API_KEY,
             polygon: POLYGONSCAN_ETHERSCAN_API_KEY,
+            mainnet: MAINNET_ETHERSCAN_API_KEY,
         },
     },
     namedAccounts: {
@@ -46,8 +48,5 @@ module.exports = {
         player: {
             default: 1,
         },
-    },
-    mocha: {
-        timeout: 2000, // 3s
     },
 }
