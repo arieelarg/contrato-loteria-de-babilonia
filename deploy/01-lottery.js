@@ -9,24 +9,26 @@ const { verify } = require("../utils/verify")
 const FUND_AMOUNT = "1000000000000000000000"
 
 const chainId = network.config.chainId
+const networkName = network.name
 const config = networkConfig[chainId]
 
 const ETHER_SCAN_KEY = process.env.GOERLI_ETHERSCAN_API_KEY
 
-async function deployLottery() {
-    const { deploy } = deployments
+module.exports = async () => {
+    const { deploy, log } = deployments
 
     const { deployer: from } = await getNamedAccounts()
+
+    log("networkName:", networkName)
+    log("config:", config)
 
     const { gasLane, ticketPrice, callbackGasLimit, playersRequired } = config
 
     let vrfCoordinatorV2, subscriptionId
 
-    const isChainDEV = developmentChains.includes(network.name)
+    const isChainDEV = developmentChains.includes(networkName)
 
-    console.log("network name:", network.name)
-
-    console.log("isChainDEV:", isChainDEV)
+    log("isChainDEV:", isChainDEV)
 
     if (isChainDEV) {
         // create VRFV2 Subscription
@@ -61,19 +63,13 @@ async function deployLottery() {
 
     // Verify the contract on Etherscan
     if (!isChainDEV && ETHER_SCAN_KEY) {
-        console.log("Verifying contract...")
+        log("Verifying contract...")
         await verify(lottery.address, args)
     }
 
-    console.log("Enter lottery with command:")
-    const networkName = isChainDEV ? "localhost" : network.name
-    console.log(`hh run script/enter.js --network ${networkName}`)
-    console.log("----------------------------------------------------")
+    log("Enter lottery with command:")
+    log(`hh run scripts/enter.js --network ${networkName}`)
+    log("----------------------------------------------------")
 }
 
-deployLottery()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error)
-        process.exitCode = 1
-    })
+module.exports.tags = ["all", "lottery"]

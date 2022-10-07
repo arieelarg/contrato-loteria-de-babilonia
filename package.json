@@ -5,14 +5,21 @@
     "main": "index.js",
     "scripts": {
         "ci": "rm -rf node_modules/ package-lock.json && npm i --legacy-peer-deps",
+
         "test:goerli": "hh test --network goerli",
         "test:local": "hh test --network localhost",
         "test:coverage": "yarn hardhat coverage",
+
+        "local": "run-p -l deploy:node run:local",
+        "run:local": "yarn wait-on && yarn run deploy:local",
         "deploy:node": "hh node",
-        "deploy:mocks": "hh run scripts/deploy-mocks.js --network localhost",
-        "deploy:local": "hh run scripts/deploy-lottery.js --network localhost",
-        "deploy:goerli": "hh run scripts/deploy-lottery.js --network goerli",
-        "deploy:mainnet": "hh run scripts/deploy-lottery.js --network mainnet",
+        "deploy:local": "hh deploy --network localhost",
+        "wait-on": "wait-on -l tcp:8545",
+
+        "deploy:goerli": "hh deploy --network goerli",
+
+        "deploy:mainnet": "hh deploy --network mainnet",
+
         "lint": "yarn solhint 'contracts/**/*.sol'",
         "fix:lint": "yarn solhint 'contracts/**/*.sol' --fix",
         "fix:format": "yarn prettier --write ."
@@ -30,10 +37,12 @@
         "hardhat": "^2.10.1",
         "hardhat-contract-sizer": "^2.6.1",
         "hardhat-deploy": "^0.11.12",
+        "npm-run-all": "^4.1.5",
         "prettier": "^2.7.1",
         "prettier-plugin-solidity": "^1.0.0-dev.23",
         "solhint": "^3.3.7",
-        "solidity-coverage": "^0.7.13"
+        "solidity-coverage": "^0.7.13",
+        "wait-on": "^6.0.1"
     },
     "dependencies": {
         "@chainlink/contracts": "^0.4.1",

@@ -6,7 +6,7 @@ const chains = {
 
 const networkConfig = {
     default: {
-        name: "localhost",
+        name: "hardhat",
     },
     [chains.localhost]: {
         name: "localhost",
