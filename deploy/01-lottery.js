@@ -45,6 +45,7 @@ module.exports = async () => {
         subscriptionId = config["subscriptionId"]
     }
 
+    // This should match constructor expected parameters order
     const args = [
         vrfCoordinatorV2,
         gasLane,
@@ -64,12 +65,10 @@ module.exports = async () => {
     // Verify the contract on Etherscan
     if (!isChainDEV && ETHER_SCAN_KEY) {
         log("Verifying contract...")
-        await verify(lottery.address, args)
+        await verify({ address: lottery.address, constructorArguments: args })
     }
 
-    log("Enter lottery with command:")
-    log(`hh run scripts/enter.js --network ${networkName}`)
-    log("----------------------------------------------------")
+    log(`Enter lottery with command: "hh run scripts/enter.js --network ${networkName}"`)
 }
 
 module.exports.tags = ["all", "lottery"]
