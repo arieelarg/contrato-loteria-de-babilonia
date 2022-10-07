@@ -6,11 +6,13 @@
     "scripts": {
         "ci": "rm -rf node_modules/ package-lock.json && npm i --legacy-peer-deps",
         "test:goerli": "hh test --network goerli",
-        "test": "hh test",
+        "test:local": "hh test --network localhost",
         "test:coverage": "yarn hardhat coverage",
-        "deploy:localhost": "hh deploy --network localhost",
-        "deploy:goerli": "hh deploy --network goerli",
-        "deploy:mainnet": "hh deploy --network mainnet",
+        "deploy:node": "hh node",
+        "deploy:mocks": "hh run scripts/deploy-mocks.js --network localhost",
+        "deploy:local": "hh run scripts/deploy-lottery.js --network localhost",
+        "deploy:goerli": "hh run scripts/deploy-lottery.js --network goerli",
+        "deploy:mainnet": "hh run scripts/deploy-lottery.js --network mainnet",
         "lint": "yarn solhint 'contracts/**/*.sol'",
         "fix:lint": "yarn solhint 'contracts/**/*.sol' --fix",
         "fix:format": "yarn prettier --write ."
