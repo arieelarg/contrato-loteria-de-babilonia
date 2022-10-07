@@ -4,11 +4,14 @@ async function enterLottery() {
     const lottery = await ethers.getContract("Lottery")
     const ticketPrice = await lottery.getTicketPrice()
     const playersRequired = await lottery.getTicketPrice()
-    console.log("playersRequired", playersRequired)
+
+    console.log("playersRequired: ", playersRequired)
+
     await lottery.buyTicket({ value: ticketPrice + 1 })
-    console.log("Entered! 1")
+    console.log("Player 1 online!")
+
     await lottery.buyTicket({ value: ticketPrice + 1 })
-    console.log("Entered! 2")
+    console.log("Player 2 online!")
 }
 
 enterLottery()

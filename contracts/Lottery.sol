@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // List of errors
 error sendMoreETHToEnterLottery(uint256 amount);
-error notEnoughPlayersToShowAmount();
 error notEnoughPlayersToPickWinner(uint256 playersCount, uint256 playersRequired);
 error transferFailed();
 error alreadyEmpty();
@@ -137,13 +136,13 @@ contract Lottery is VRFConsumerBaseV2 {
 
     /** Getters */
     function getPrize() public view returns (uint256) {
-        if (s_players.length <= 0) {
-            revert notEnoughPlayersToShowAmount();
+        if (s_players.length > 0) {
+            uint256 balance = address(this).balance;
+
+            return balance.mul(75).div(100);
         }
 
-        uint256 balance = address(this).balance;
-
-        return balance.mul(75).div(100);
+        return 0;
     }
 
     function getWinner() public view returns (address) {
