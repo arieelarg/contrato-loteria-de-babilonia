@@ -5,38 +5,39 @@ require("solidity-coverage")
 require("hardhat-contract-sizer")
 require("dotenv").config()
 
-const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL
+const { chains } = require("./helper-hardhat-config")
+
 const ALCHEMY_PRIVATE_KEY = [process.env.ALCHEMY_PRIVATE_KEY]
+
 const MAINNET_RPC_URL = process.env.MAINNET_RPC_URL
 const MAINNET_ETHERSCAN_API_KEY = process.env.MAINNET_ETHERSCAN_API_KEY
+
+const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL
 const GOERLI_ETHERSCAN_API_KEY = process.env.GOERLI_ETHERSCAN_API_KEY
-const POLYGONSCAN_ETHERSCAN_API_KEY = process.env.POLYGONSCAN_ETHERSCAN_API_KEY
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
     solidity: "0.8.9",
     networks: {
-        hardhat: {
-            chainId: 31337,
+        localhost: {
+            chainId: chains.localhost,
             blockConfirmations: 1,
         },
         goerli: {
-            chainId: 5,
+            chainId: chains.goerli,
             blockConfirmations: 6,
             url: GOERLI_RPC_URL,
             accounts: ALCHEMY_PRIVATE_KEY,
         },
         mainnet: {
-            chainId: 1,
+            chainId: chains.mainnet,
             url: MAINNET_RPC_URL,
             accounts: ALCHEMY_PRIVATE_KEY,
         },
     },
     etherscan: {
         apiKey: {
-            // "verify:goerli": "yarn hardhat verify --network goerli <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>",
             goerli: GOERLI_ETHERSCAN_API_KEY,
-            polygon: POLYGONSCAN_ETHERSCAN_API_KEY,
             mainnet: MAINNET_ETHERSCAN_API_KEY,
         },
     },
