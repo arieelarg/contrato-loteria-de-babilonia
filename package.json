@@ -4,22 +4,16 @@
     "description": "Lotería de Babilonia",
     "main": "index.js",
     "scripts": {
-        "ci": "rm -rf node_modules/ package-lock.json && npm i --legacy-peer-deps",
-
         "test:local": "hh test --network localhost",
         "test:goerli": "hh test --network goerli",
         "test:coverage": "yarn hardhat coverage",
-
         "local": "run-p -l deploy:node run:local",
         "run:local": "yarn wait-on && yarn run deploy:local",
         "deploy:node": "hh node",
         "deploy:local": "hh deploy --network localhost",
         "wait-on": "wait-on -l tcp:8545",
-
         "deploy:goerli": "hh deploy --network goerli",
-
         "deploy:mainnet": "hh deploy --network mainnet",
-
         "lint": "yarn solhint 'contracts/**/*.sol'",
         "fix:lint": "yarn solhint 'contracts/**/*.sol' --fix",
         "fix:format": "yarn prettier --write ."

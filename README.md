@@ -33,6 +33,7 @@ Este comando va a ejecutar una serie de scripts detallados a continuación:
 Al hacer esto no es necesario especificar de donde leer los script de mock o deploy, siempre va a leer ambos.
 
 ## Test on local node
+<b>Requisitos previos:</b> Haber hecho un deploy de local.
 ```js
 yarn run test:local
 ```
