@@ -16,7 +16,7 @@ error noWinnerPresent();
 /** @title Loteria de Babilonia */
 contract Lottery is VRFConsumerBaseV2 {
     /* Type declarations */
-    enum LotteryState {
+    enum LotteryStatus {
         OPEN,
         CALCULATING
     }
@@ -35,10 +35,11 @@ contract Lottery is VRFConsumerBaseV2 {
     uint256 private immutable i_playersRequired;
     address payable[] private s_players;
     address private s_winner;
-    LotteryState private s_lotteryState;
+    LotteryStatus private s_lotteryStatus;
 
     // Events
     event RequestedWinner(uint256 indexed requestId);
+    event RequestingWinner();
     event EnterLottery();
     event WinnerPicked(address indexed player);
     event PrizeTransfered(address winner, uint256 prize);
@@ -54,7 +55,7 @@ contract Lottery is VRFConsumerBaseV2 {
         // Lottery variables
         i_ticketPrice = ticketPrice;
         i_playersRequired = playersRequired;
-        s_lotteryState = LotteryState.OPEN;
+        s_lotteryStatus = LotteryStatus.OPEN;
 
         // Chainlink VRF variables
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
@@ -68,7 +69,7 @@ contract Lottery is VRFConsumerBaseV2 {
             revert sendMoreETHToEnterLottery(msg.value);
         }
 
-        if (s_lotteryState != LotteryState.OPEN) {
+        if (s_lotteryStatus != LotteryStatus.OPEN) {
             revert notOpen();
         }
 
@@ -83,13 +84,13 @@ contract Lottery is VRFConsumerBaseV2 {
             revert notEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
         }
 
-        if (s_lotteryState != LotteryState.OPEN) {
+        if (s_lotteryStatus != LotteryStatus.OPEN) {
             revert notOpen();
         }
 
-        s_lotteryState = LotteryState.CALCULATING;
+        s_lotteryStatus = LotteryStatus.CALCULATING;
 
-        // @audit-it Do I need to create a fallback to prevent getting lottery stuck in state == CALCULATING?
+        // @audit-it Do I need to create a fallback to prevent getting lottery stuck in status == CALCULATING?
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -105,6 +106,8 @@ contract Lottery is VRFConsumerBaseV2 {
         uint256, /*requestId*/
         uint256[] memory randomWords
     ) internal override {
+        emit RequestingWinner();
+
         uint256 winnerIndex = randomWords[0] % s_players.length;
 
         s_winner = s_players[winnerIndex];
@@ -123,7 +126,7 @@ contract Lottery is VRFConsumerBaseV2 {
 
         resetLottery();
 
-        s_lotteryState = LotteryState.OPEN;
+        s_lotteryStatus = LotteryStatus.OPEN;
     }
 
     function resetLottery() internal {
@@ -157,8 +160,8 @@ contract Lottery is VRFConsumerBaseV2 {
         return s_players.length;
     }
 
-    function getLotteryState() public view returns (LotteryState) {
-        return s_lotteryState;
+    function getLotteryStatus() public view returns (LotteryStatus) {
+        return s_lotteryStatus;
     }
 
     function getTicketPrice() public view returns (uint256) {
