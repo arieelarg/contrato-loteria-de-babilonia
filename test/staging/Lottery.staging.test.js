@@ -11,7 +11,7 @@ isChainDEV
     : describe("Lottery Staging Tests", () => {
           let lottery, ticketPrice, deployer
 
-          beforeAll(async () => {
+          beforeEach(async () => {
               deployer = (await getNamedAccounts()).deployer
               lottery = await ethers.getContract("Lottery", deployer)
               ticketPrice = await lottery.getTicketPrice()
@@ -20,7 +20,7 @@ isChainDEV
           // Lottery methods being tested
           const buyTicket = (value = ticketPrice) => lottery.buyTicket({ value })
           const getBalance = (address) => waffle.provider.getBalance(address)
-          const getRandomWinner = (gasLimit = 2500000) => lottery.getRandomWinner({ gasLimit })
+          const getRandomWinner = (gasLimit = 500000) => lottery.getRandomWinner({ gasLimit })
           const getNumberOfPlayers = () => lottery.getNumberOfPlayers()
           const getLotteryStatus = () => lottery.callStatic.getLotteryStatus()
           const getWinner = () => lottery.getWinner()

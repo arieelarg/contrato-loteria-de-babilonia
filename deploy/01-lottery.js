@@ -12,7 +12,8 @@ const chainId = network.config.chainId
 const networkName = network.name
 const config = networkConfig[chainId]
 
-const ETHER_SCAN_KEY = process.env.GOERLI_ETHERSCAN_API_KEY
+const PROD_ETHERSCAN_API_KEY = process.env.PROD_ETHERSCAN_API_KEY
+const TEST_ETHERSCAN_API_KEY = process.env.TEST_ETHERSCAN_API_KEY
 
 module.exports = async () => {
     const { deploy, log } = deployments
@@ -63,7 +64,7 @@ module.exports = async () => {
     })
 
     // Verify the contract on Etherscan
-    if (!isChainDEV && ETHER_SCAN_KEY) {
+    if (!isChainDEV && (TEST_ETHERSCAN_API_KEY || PROD_ETHERSCAN_API_KEY)) {
         log("Verifying contract...")
         await verify({ address: lottery.address, constructorArguments: args })
     }
