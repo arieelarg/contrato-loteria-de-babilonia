@@ -4,6 +4,7 @@
     "description": "Lotería de Babilonia",
     "main": "index.js",
     "scripts": {
+        "build": "rm -rf ./artifacts ./cache && hh compile",
         "test:local": "hh test --network localhost",
         "test:goerli": "hh test --network goerli",
         "test:coverage": "yarn hardhat coverage",
