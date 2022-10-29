@@ -4,9 +4,10 @@ pragma solidity ^0.8.9;
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // List of errors
-error sendMoreETHToEnterLottery(uint256 amount);
+error sendMoreETHToBuyTicket(uint256 amount);
 error notEnoughPlayersToPickWinner(uint256 playersCount, uint256 playersRequired);
 error transferFailed();
 error alreadyEmpty();
@@ -14,7 +15,7 @@ error notOpen();
 error noWinnerPresent();
 
 /** @title Loteria de Babilonia */
-contract Lottery is VRFConsumerBaseV2 {
+contract Lottery is VRFConsumerBaseV2, Ownable {
     /* Type declarations */
     enum LotteryStatus {
         OPEN,
@@ -32,15 +33,16 @@ contract Lottery is VRFConsumerBaseV2 {
     // Lottery variables
     using SafeMath for uint256;
     uint256 private immutable i_ticketPrice;
-    uint256 private immutable i_playersRequired;
+    uint256 private s_playersRequired;
     address payable[] private s_players;
     address private s_winner;
     LotteryStatus private s_lotteryStatus;
 
     // Events
-    event RequestedWinner(uint256 indexed requestId);
-    event RequestingWinner();
-    event EnterLottery();
+    event UpdateLottery();
+    event BuyTicket();
+    event RequestedWinner();
+    event RandomWords(uint256 requestId, uint256[] randomWords);
     event WinnerPicked(address indexed player);
     event PrizeTransfered(address winner, uint256 prize);
 
@@ -54,7 +56,7 @@ contract Lottery is VRFConsumerBaseV2 {
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
         // Lottery variables
         i_ticketPrice = ticketPrice;
-        i_playersRequired = playersRequired;
+        s_playersRequired = playersRequired;
         s_lotteryStatus = LotteryStatus.OPEN;
 
         // Chainlink VRF variables
@@ -62,11 +64,13 @@ contract Lottery is VRFConsumerBaseV2 {
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
+
+        emit UpdateLottery();
     }
 
     function buyTicket() public payable {
         if (msg.value < i_ticketPrice) {
-            revert sendMoreETHToEnterLottery(msg.value);
+            revert sendMoreETHToBuyTicket(msg.value);
         }
 
         if (s_lotteryStatus != LotteryStatus.OPEN) {
@@ -75,13 +79,12 @@ contract Lottery is VRFConsumerBaseV2 {
 
         s_players.push(payable(msg.sender));
 
-        emit EnterLottery();
+        emit BuyTicket();
     }
 
-    // @audit-it why is this public? i think it will be better if this were onlyOwner
-    function getRandomWinner() external {
-        if (s_players.length < i_playersRequired) {
-            revert notEnoughPlayersToPickWinner(s_players.length, i_playersRequired);
+    function getRandomWinner() public onlyOwner {
+        if (s_players.length < s_playersRequired) {
+            revert notEnoughPlayersToPickWinner(s_players.length, s_playersRequired);
         }
 
         if (s_lotteryStatus != LotteryStatus.OPEN) {
@@ -99,22 +102,37 @@ contract Lottery is VRFConsumerBaseV2 {
             NUM_WORDS
         );
 
-        emit RequestedWinner(requestId);
+        emit RequestedWinner();
+
+        setWinner(requestId);
+
+        transferPrize();
+
+        restartLottery();
     }
 
-    function fulfillRandomWords(
-        uint256, /*requestId*/
-        uint256[] memory randomWords
-    ) internal override {
-        emit RequestingWinner();
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
+        emit RandomWords(requestId, randomWords);
+    }
 
-        uint256 winnerIndex = randomWords[0] % s_players.length;
+    function setWinner(uint256 requestId) internal {
+        if (requestId < 0) {
+            revert transferFailed();
+        }
+
+        uint256 winnerIndex = requestId % s_players.length;
 
         s_winner = s_players[winnerIndex];
 
         emit WinnerPicked(s_winner);
+    }
 
+    function transferPrize() internal {
         uint256 prize = getPrize();
+
+        if (prize <= 0) {
+            revert transferFailed();
+        }
 
         (bool success, ) = s_winner.call{value: prize}(""); // @audit-it Replace with transfer() to prevent reentrancy attack
 
@@ -123,18 +141,25 @@ contract Lottery is VRFConsumerBaseV2 {
         }
 
         emit PrizeTransfered(s_winner, prize);
-
-        resetLottery();
-
-        s_lotteryStatus = LotteryStatus.OPEN;
     }
 
-    function resetLottery() internal {
+    function restartLottery() internal {
         if (s_players.length <= 0) {
             revert alreadyEmpty();
         }
 
         s_players = new address payable[](0);
+
+        s_lotteryStatus = LotteryStatus.OPEN;
+
+        emit UpdateLottery();
+    }
+
+    function calculatePrice() internal {}
+
+    /** Setters */
+    function setPlayersRquired(uint256 playersRequired) public onlyOwner {
+        s_playersRequired = playersRequired;
     }
 
     /** Getters */
@@ -169,7 +194,7 @@ contract Lottery is VRFConsumerBaseV2 {
     }
 
     function getPlayersRequired() public view returns (uint256) {
-        return i_playersRequired;
+        return s_playersRequired;
     }
 
     function getPlayers() public view returns (address payable[] memory) {
