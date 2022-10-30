@@ -41,10 +41,12 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     // Events
     event UpdateLottery();
     event BuyTicket();
-    event RequestedWinner();
+    event WinnerRequested();
+    event LotteryCalculating(LotteryStatus lotteryStatus);
     event RandomWords(uint256 requestId, uint256[] randomWords);
     event WinnerPicked(address indexed player);
-    event PrizeTransfered(address winner, uint256 prize);
+    event PrizeTransfered(address winner);
+    event PrizeToTransfer(uint256 prize);
 
     constructor(
         address vrfCoordinatorV2,
@@ -93,6 +95,8 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
         s_lotteryStatus = LotteryStatus.CALCULATING;
 
+        emit LotteryCalculating(s_lotteryStatus);
+
         // @audit-it Do I need to create a fallback to prevent getting lottery stuck in status == CALCULATING?
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
@@ -102,7 +106,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
             NUM_WORDS
         );
 
-        emit RequestedWinner();
+        emit WinnerRequested();
 
         setWinner(requestId);
 
@@ -130,6 +134,8 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     function transferPrize() internal {
         uint256 prize = getPrize();
 
+        emit PrizeToTransfer(prize);
+
         if (prize <= 0) {
             revert transferFailed();
         }
@@ -140,7 +146,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
             revert transferFailed();
         }
 
-        emit PrizeTransfered(s_winner, prize);
+        emit PrizeTransfered(s_winner);
     }
 
     function restartLottery() internal {

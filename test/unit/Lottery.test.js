@@ -2,38 +2,51 @@ const { assert, expect } = require("chai")
 const { network, deployments, ethers, waffle } = require("hardhat")
 const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
 
+const GAS_LIMIT = 200000
 const isChainDEV = developmentChains.includes(network.name)
 
 !isChainDEV
     ? describe.skip
     : describe("Lottery Unit Tests", () => {
-          let lottery, vrfCoordinatorV2Mock, ticketPrice, winner, player, lotteryContract
+          let owner, player, winner
+          let ticketPrice
+          let lottery, token
+
           const { chainId } = network.config
           const config = networkConfig[chainId]
 
           beforeEach(async () => {
-              const accounts = await ethers.getSigners()
-              player = accounts[1]
-              winner = accounts[2] // We will always get the same result
+              ;[owner, player, winner] = await ethers.getSigners()
 
               await deployments.fixture(["mocks", "lottery"])
 
-              lotteryContract = await ethers.getContract("Lottery")
-              lottery = await lotteryContract.connect(player)
+              token = await ethers.getContract("Lottery")
+              lottery = await token.connect(owner)
 
               ticketPrice = await lottery.getTicketPrice()
-              vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
           })
 
           // Lottery methods being tested
           const buyTicket = (value = ticketPrice) => lottery.buyTicket({ value })
           const getBalance = (address) => waffle.provider.getBalance(address)
-          const getRandomWinner = (gasLimit = 100000) => lottery.getRandomWinner({ gasLimit })
+          const getRandomWinner = (gasLimit = GAS_LIMIT) => lottery.getRandomWinner({ gasLimit })
           const getNumberOfPlayers = () => lottery.getNumberOfPlayers()
           const getLotteryStatus = () => lottery.getLotteryStatus()
           const getWinner = () => lottery.getWinner()
-          const getPrize = () => lottery.getPrize()
+          //   const getPrize = () => lottery.getPrize()
           const getTicketPrice = () => lottery.getTicketPrice()
+
+          const getArgsFromEvent = ({ events, eventName }) => {
+              let eventArgs = {}
+
+              for (const event of events) {
+                  if (event?.event === eventName) {
+                      eventArgs = event.args
+                  }
+              }
+
+              return eventArgs
+          }
 
           describe("constructor", () => {
               it("initializates the lottery", async () => {
@@ -47,17 +60,17 @@ const isChainDEV = developmentChains.includes(network.name)
 
           describe("enterLottery", () => {
               it("reverts when not paid enough", async () => {
-                  await expect(buyTicket(0)).to.be.revertedWith("sendMoreETHToEnterLottery")
+                  await expect(buyTicket(0)).to.be.revertedWith("sendMoreETHToBuyTicket")
               })
 
               it("record players when they enter", async () => {
                   await buyTicket()
                   const contractPlayer = await lottery.getPlayer(0)
-                  assert.equal(player.address, contractPlayer)
+                  assert.equal(owner.address, contractPlayer)
               })
 
               it("emits event when enter lottery", async () => {
-                  await expect(buyTicket()).to.emit(lottery, "EnterLottery")
+                  await expect(buyTicket()).to.emit(lottery, "BuyTicket")
               })
           })
 
@@ -67,7 +80,9 @@ const isChainDEV = developmentChains.includes(network.name)
               })
 
               it("picks a winner, resets, and sends money", async () => {
-                  const player2 = lotteryContract.connect(winner)
+                  const lotteryByOwner = await token.connect(owner)
+
+                  const player2 = token.connect(winner)
                   await player2.buyTicket({ value: ticketPrice })
 
                   // Get winner balance before token transfer
@@ -77,37 +92,41 @@ const isChainDEV = developmentChains.includes(network.name)
                   assert.equal(await getLotteryStatus(), "0")
 
                   // Requesting random winner
-                  console.log("Requesting winner...")
-                  const txLottery = await getRandomWinner()
+                  console.log("Requesting winner")
+                  const txLottery = await lotteryByOwner.getRandomWinner({ gasLimit: GAS_LIMIT })
                   const txReceipt = await txLottery.wait(1)
 
                   // LotteryStatus should be CALCULATING
-                  assert.equal(await getLotteryStatus(), "1")
+                  console.log("Lottery calculating")
+                  await expect(txLottery).to.emit(lottery, "LotteryCalculating")
 
-                  // While CALCULATING random winner should emit RequestedWinner event
-                  await expect(txLottery).to.emit(lottery, "RequestedWinner")
+                  console.log("Winner requested")
+                  await expect(txLottery).to.emit(lottery, "WinnerRequested")
+
+                  console.log("Winner picked!")
+                  await expect(txLottery).to.emit(lottery, "WinnerPicked")
+
+                  console.log("Prize amount")
+                  await expect(txLottery).to.emit(lottery, "PrizeToTransfer")
+
+                  console.log("Prize transfer")
+                  await expect(txLottery).to.emit(lottery, "PrizeTransfered")
+
+                  console.log("Reset lottery")
+                  await expect(txLottery).to.emit(lottery, "UpdateLottery")
 
                   // Check Prize calculation
-                  const actualPrize = await getPrize()
+                  const args = getArgsFromEvent({
+                      events: txReceipt.events,
+                      eventName: "PrizeToTransfer",
+                  })
+
                   const calculatedPrize = ((await getTicketPrice()) * 2 * 75) / 100
-                  assert.equal(actualPrize.toString(), calculatedPrize.toString())
-
-                  const vrfCoordinatorV2Request = await vrfCoordinatorV2Mock.fulfillRandomWords(
-                      txReceipt.events[1].args.requestId,
-                      lottery.address
-                  )
-
-                  //   Wait for WinnerPicked event to emit
-                  await expect(vrfCoordinatorV2Request)
-                      .to.emit(lottery, "WinnerPicked")
-                      .withArgs(winner.address)
-
-                  await expect(vrfCoordinatorV2Request)
-                      .to.emit(lottery, "PrizeTransfered")
-                      .withArgs(winner.address, actualPrize)
+                  assert.equal(args?.prize?.toString(), calculatedPrize.toString())
 
                   // Check winner
                   const actualWinner = await getWinner()
+                  console.log("actualWinner", actualWinner)
                   assert.equal(actualWinner, winner.address)
 
                   // Winner balance should update with prize
@@ -115,7 +134,7 @@ const isChainDEV = developmentChains.includes(network.name)
 
                   assert.equal(
                       winnerBalance.toString(),
-                      winnerStartingBalance.add(actualPrize).toString()
+                      winnerStartingBalance.add(args.prize).toString()
                   )
 
                   // Lottery should reset

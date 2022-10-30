@@ -5,9 +5,9 @@
     "main": "index.js",
     "scripts": {
         "build": "rm -rf ./artifacts ./cache && hh compile",
+        "test": "yarn hardhat coverage",
         "test:local": "hh test --network localhost",
         "test:goerli": "hh test --network goerli",
-        "test:coverage": "yarn hardhat coverage",
         "local": "run-p -l deploy:node run:local",
         "run:local": "yarn wait-on && yarn run deploy:local",
         "deploy:node": "hh node",
