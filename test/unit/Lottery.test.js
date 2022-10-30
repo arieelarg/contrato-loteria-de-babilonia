@@ -1,8 +1,8 @@
 const { assert, expect } = require("chai")
 const { network, deployments, ethers, waffle } = require("hardhat")
 const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
+const { GAS_LIMIT } = require("../constants")
 
-const GAS_LIMIT = 200000
 const isChainDEV = developmentChains.includes(network.name)
 
 !isChainDEV
@@ -74,14 +74,12 @@ const isChainDEV = developmentChains.includes(network.name)
               })
           })
 
-          describe("fulfillRandomWords", () => {
+          describe("getRandomWinner", () => {
               beforeEach(async () => {
                   await buyTicket()
               })
 
               it("picks a winner, resets, and sends money", async () => {
-                  const lotteryByOwner = await token.connect(owner)
-
                   const player2 = token.connect(winner)
                   await player2.buyTicket({ value: ticketPrice })
 
@@ -93,7 +91,7 @@ const isChainDEV = developmentChains.includes(network.name)
 
                   // Requesting random winner
                   console.log("Requesting winner")
-                  const txLottery = await lotteryByOwner.getRandomWinner({ gasLimit: GAS_LIMIT })
+                  const txLottery = await getRandomWinner()
                   const txReceipt = await txLottery.wait(1)
 
                   // LotteryStatus should be CALCULATING

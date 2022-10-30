@@ -1,6 +1,7 @@
 const { assert, expect } = require("chai")
 const { network, ethers, waffle } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
+const { GAS_LIMIT } = require("../constants")
 
 const isChainDEV = developmentChains.includes(network.name)
 
@@ -20,7 +21,7 @@ isChainDEV
           // Lottery methods being tested
           const buyTicket = (value = ticketPrice) => lottery.buyTicket({ value })
           const getBalance = (address) => waffle.provider.getBalance(address)
-          const getRandomWinner = (gasLimit = 500000) => lottery.getRandomWinner({ gasLimit })
+          const getRandomWinner = (gasLimit = GAS_LIMIT) => lottery.getRandomWinner({ gasLimit })
           const getNumberOfPlayers = () => lottery.getNumberOfPlayers()
           const getLotteryStatus = () => lottery.callStatic.getLotteryStatus()
           const getWinner = () => lottery.getWinner()
@@ -28,7 +29,7 @@ isChainDEV
           const getTicketPrice = () => lottery.getTicketPrice()
           //   const getPlayers = () => lottery.getPlayers()
 
-          describe("fulfillRandomWords", () => {
+          describe("getRandomWinner", () => {
               it("picks a winner, resets, and sends money", async () => {
                   let playersOnline = (await getNumberOfPlayers()).toString()
 
@@ -87,15 +88,6 @@ isChainDEV
                   const winner = await getWinner()
                   console.log("winner:", winner)
                   assert.equal(winner, deployer)
-
-                  // Wait for WinnerPicked event to emit
-                  //   await expect(vrfCoordinatorV2Request)
-                  //       .to.emit(lottery, "WinnerPicked")
-                  //       .withArgs(winner.address)
-
-                  //   await expect(vrfCoordinatorV2Request)
-                  //       .to.emit(lottery, "PrizeTransfered")
-                  //       .withArgs(winner.address, prize)
 
                   // Winner balance should update with prize
                   const winnerBalance = await getBalance(winner.address)
