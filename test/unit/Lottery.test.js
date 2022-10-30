@@ -2,6 +2,7 @@ const { assert, expect } = require("chai")
 const { network, deployments, ethers, waffle } = require("hardhat")
 const { developmentChains, networkConfig } = require("../../helper-hardhat-config")
 const { GAS_LIMIT } = require("../constants")
+const { getArgsFromEvent } = require("../utils")
 
 const isChainDEV = developmentChains.includes(network.name)
 
@@ -35,18 +36,6 @@ const isChainDEV = developmentChains.includes(network.name)
           const getWinner = () => lottery.getWinner()
           //   const getPrize = () => lottery.getPrize()
           const getTicketPrice = () => lottery.getTicketPrice()
-
-          const getArgsFromEvent = ({ events, eventName }) => {
-              let eventArgs = {}
-
-              for (const event of events) {
-                  if (event?.event === eventName) {
-                      eventArgs = event.args
-                  }
-              }
-
-              return eventArgs
-          }
 
           describe("constructor", () => {
               it("initializates the lottery", async () => {
