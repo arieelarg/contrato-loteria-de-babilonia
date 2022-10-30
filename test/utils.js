@@ -1,13 +1,7 @@
 const getArgsFromEvent = ({ events, eventName }) => {
-    let eventArgs = {}
+    const [event] = events.filter(({ event }) => event == eventName)
 
-    for (const event of events) {
-        if (event?.event === eventName) {
-            eventArgs = event.args
-        }
-    }
-
-    return eventArgs
+    return event.args
 }
 
 module.exports = { getArgsFromEvent }

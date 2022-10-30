@@ -39,14 +39,15 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     LotteryStatus private s_lotteryStatus;
 
     // Events
-    event UpdateLottery();
-    event BuyTicket();
-    event WinnerRequested();
+    event StartLottery(uint256 price, LotteryStatus lotteryStatus, uint256 playersRequired); // price, status, playersRequired
+    event RestartLottery(LotteryStatus lotteryStatus, address payable[] s_players); // status
+    event BuyTicket(uint256 prize);
     event LotteryCalculating(LotteryStatus lotteryStatus);
     event RandomWords(uint256 requestId, uint256[] randomWords);
     event WinnerPicked(address indexed player);
     event PrizeTransfered(address winner);
     event PrizeToTransfer(uint256 prize);
+    event UpdatePlayersRequired(uint256 playersRequired);
 
     constructor(
         address vrfCoordinatorV2,
@@ -67,7 +68,12 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
 
-        emit UpdateLottery();
+        startLottery(ticketPrice, playersRequired);
+    }
+
+    function startLottery(uint256 ticketPrice, uint256 playersRequired) internal {
+        // uint256 price, LotteryStatus lotteryStatus, uint256 playersRequired
+        emit StartLottery(ticketPrice, LotteryStatus.OPEN, playersRequired);
     }
 
     function buyTicket() public payable {
@@ -81,7 +87,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
         s_players.push(payable(msg.sender));
 
-        emit BuyTicket();
+        emit BuyTicket(msg.value);
     }
 
     function getRandomWinner() public onlyOwner {
@@ -105,8 +111,6 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
             i_callbackGasLimit,
             NUM_WORDS
         );
-
-        emit WinnerRequested();
 
         setWinner(requestId);
 
@@ -158,14 +162,16 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
         s_lotteryStatus = LotteryStatus.OPEN;
 
-        emit UpdateLottery();
+        emit RestartLottery(LotteryStatus.OPEN, s_players);
     }
 
-    function calculatePrice() internal {}
+    // function calculatePrice() internal {}
 
     /** Setters */
     function setPlayersRquired(uint256 playersRequired) public onlyOwner {
         s_playersRequired = playersRequired;
+
+        emit UpdatePlayersRequired(playersRequired);
     }
 
     /** Getters */

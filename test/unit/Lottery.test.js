@@ -39,11 +39,16 @@ const isChainDEV = developmentChains.includes(network.name)
 
           describe("constructor", () => {
               it("initializates the lottery", async () => {
+                  //   const Lottery = await ethers.getContractFactory("Lottery")
+                  //   const lottery = await Lottery.deploy()
+                  //   await lottery.deployed()
+
                   const lotteryStatus = await lottery.getLotteryStatus()
                   const playersRequired = await lottery.getPlayersRequired()
                   assert.equal(lotteryStatus.toString(), "0")
                   assert.equal(playersRequired.toString(), config.playersRequired)
-                  // complete...
+                  // TODO: Finish test
+                  //   await expect(lottery.startLottery).to.emit(lottery, "StartLottery")
               })
           })
 
@@ -87,9 +92,6 @@ const isChainDEV = developmentChains.includes(network.name)
                   console.log("Lottery calculating")
                   await expect(txLottery).to.emit(lottery, "LotteryCalculating")
 
-                  console.log("Winner requested")
-                  await expect(txLottery).to.emit(lottery, "WinnerRequested")
-
                   console.log("Winner picked!")
                   await expect(txLottery).to.emit(lottery, "WinnerPicked")
 
@@ -99,8 +101,8 @@ const isChainDEV = developmentChains.includes(network.name)
                   console.log("Prize transfer")
                   await expect(txLottery).to.emit(lottery, "PrizeTransfered")
 
-                  console.log("Reset lottery")
-                  await expect(txLottery).to.emit(lottery, "UpdateLottery")
+                  console.log("Restart lottery")
+                  await expect(txLottery).to.emit(lottery, "RestartLottery")
 
                   // Check Prize calculation
                   const args = getArgsFromEvent({
