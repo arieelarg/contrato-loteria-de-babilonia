@@ -39,9 +39,9 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     LotteryStatus private s_lotteryStatus;
 
     // Events
-    event StartLottery(uint256 price, LotteryStatus lotteryStatus, uint256 playersRequired); // price, status, playersRequired
-    event RestartLottery(LotteryStatus lotteryStatus, address payable[] s_players); // status
-    event BuyTicket(uint256 prize);
+    event StartLottery(uint256 price, LotteryStatus lotteryStatus, uint256 playersRequired);
+    event RestartLottery(LotteryStatus lotteryStatus, address payable[] s_players);
+    event BuyTicket(uint256 prize, address from);
     event LotteryCalculating(LotteryStatus lotteryStatus);
     event RandomWords(uint256 requestId, uint256[] randomWords);
     event WinnerPicked(address indexed player);
@@ -87,7 +87,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
         s_players.push(payable(msg.sender));
 
-        emit BuyTicket(msg.value);
+        emit BuyTicket(msg.value, msg.sender);
     }
 
     function getRandomWinner() public onlyOwner {
