@@ -12,6 +12,18 @@ async function enterLottery() {
 
     await lottery.buyTicket({ value: ticketPrice })
     console.log("Player 2 online!")
+
+    await lottery.buyTicket({ value: ticketPrice })
+    console.log("Player 3 online!")
+
+    await lottery.buyTicket({ value: ticketPrice })
+    console.log("Player 4 online!")
+
+    await lottery.buyTicket({ value: ticketPrice })
+    console.log("Player 5 online!")
+
+    await lottery.getRandomWinner()
+    console.log("Winner!")
 }
 
 enterLottery()

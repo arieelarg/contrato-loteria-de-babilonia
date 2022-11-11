@@ -9,18 +9,17 @@ Este contrato describe una lotería sencilla con un pozo, jugadores, "sorteador"
 * getWinner: Sortear un ganador
 * ...
 
-## Deploy on local node
+## Deploy to local node
 ```bash
-yarn run local
+    yarn run local
 ```
 
 Este comando va a ejecutar una serie de scripts detallados a continuación:
 
 ```bash
-"run:local": "yarn wait-on && yarn run deploy:local",
-"deploy:node": "hh node",
-"deploy:local": "hh deploy --network localhost",
-"wait-on": "wait-on -l tcp:8545",
+"local": "run-p -l start:local deploy:local",
+"start:local": "hh node",
+"deploy:local": "yarn wait-on && hh deploy --network localhost",        
 ```
 
 ### Pasos que ejecuta el script
@@ -34,23 +33,23 @@ Al hacer esto no es necesario especificar de donde leer los script de mock o dep
 
 ## Test on local node
 <b>Requisitos previos:</b> Haber hecho un deploy de local.
-```js
+```bash
 yarn run test:local
 ```
 
 ## Deploy on Goerli
-```js
+```bash
 yarn run deploy:goerli
 ```
 
 <b>Aclaración:</b> Esta ejecución implica una verificación del contrato dentro del script que realiza el deploy `01-lottery.js`.
 
 ## Test on Goerli
-```js
+```bash
 yarn run test:goerli // not working
 ```
 
 ## Deploy on Mainnet
-```js
+```bash
 yarn run deploy:mainnet
 ```
