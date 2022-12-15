@@ -6,19 +6,14 @@
     "scripts": {
         "build": "rm -rf ./artifacts ./cache && hh compile",
         "test": "yarn hardhat coverage",
-
         "local": "run-p -l start:local deploy:local",
         "start:local": "hh node",
         "deploy:local": "yarn wait-on && hh deploy --network localhost",        
         "test:local": "hh test --network localhost",
-
         "test:goerli": "hh test --network goerli",
-
         "wait-on": "wait-on -l tcp:8545",
-
         "deploy:goerli": "hh deploy --network goerli",
         "deploy:mainnet": "hh deploy --network mainnet",
-
         "lint": "yarn solhint 'contracts/**/*.sol'",
         "fix:lint": "yarn solhint 'contracts/**/*.sol' --fix",
         "fix:format": "yarn prettier --write .",

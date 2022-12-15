@@ -13,6 +13,7 @@ error transferFailed();
 error alreadyEmpty();
 error notOpen();
 error noWinnerPresent();
+error illegalTicketPrice();
 
 /** @title Loteria de Babilonia */
 contract Lottery is VRFConsumerBaseV2, Ownable {
@@ -32,7 +33,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
 
     // Lottery variables
     using SafeMath for uint256;
-    uint256 private immutable i_ticketPrice;
+    uint256 private i_ticketPrice;
     uint256 private s_playersRequired;
     address payable[] private s_players;
     address private s_winner;
@@ -48,6 +49,7 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
     event PrizeTransfered(address winner);
     event PrizeToTransfer(uint256 prize);
     event UpdatePlayersRequired(uint256 playersRequired);
+    event TicketPriceUpdated(uint256 ticketPrice);
 
     constructor(
         address vrfCoordinatorV2,
@@ -135,13 +137,17 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         emit WinnerPicked(s_winner);
     }
 
-    function transferPrize() internal {
+    function transferPrize() public onlyOwner {
         uint256 prize = getPrize();
 
         emit PrizeToTransfer(prize);
 
         if (prize <= 0) {
             revert transferFailed();
+        }
+
+        if(s_winner == address(0)) {
+            revert noWinnerPresent();
         }
 
         (bool success, ) = s_winner.call{value: prize}(""); // @audit-it Replace with transfer() to prevent reentrancy attack
@@ -165,9 +171,17 @@ contract Lottery is VRFConsumerBaseV2, Ownable {
         emit RestartLottery(LotteryStatus.OPEN, s_players);
     }
 
-    // function calculatePrice() internal {}
-
     /** Setters */
+    function setTicketPrice(uint256 ticketPrice) public onlyOwner {
+        if(ticketPrice <= 0){
+            revert illegalTicketPrice();
+        }
+
+        i_ticketPrice = ticketPrice;
+
+        emit TicketPriceUpdated(i_ticketPrice);
+    }
+
     function setPlayersRquired(uint256 playersRequired) public onlyOwner {
         s_playersRequired = playersRequired;
 
