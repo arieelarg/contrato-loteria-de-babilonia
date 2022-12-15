@@ -2,6 +2,7 @@ const { assert, expect } = require("chai")
 const { network, ethers, waffle } = require("hardhat")
 const { developmentChains } = require("../../helper-hardhat-config")
 const { GAS_LIMIT } = require("../constants")
+const { getArgsFromEvent } = require("../utils")
 
 const isChainDEV = developmentChains.includes(network.name)
 
@@ -15,6 +16,7 @@ isChainDEV
           beforeEach(async () => {
               deployer = (await getNamedAccounts()).deployer
               lottery = await ethers.getContract("Lottery", deployer)
+              console.log("Address", lottery.address)
               ticketPrice = await lottery.getTicketPrice()
           })
 
@@ -37,13 +39,13 @@ isChainDEV
 
                   if (Number(playersOnline) < 5) {
                       console.log("Buying tickets...")
-                      await buyTicket()
-                      await buyTicket()
-                      await buyTicket()
-                      await buyTicket()
-                      await buyTicket()
-                      await buyTicket()
-                      await buyTicket()
+                      await (await buyTicket()).wait()
+                      await (await buyTicket()).wait()
+                      await (await buyTicket()).wait()
+                      await (await buyTicket()).wait()
+                      await (await buyTicket()).wait()
+                      await (await buyTicket()).wait()
+                      await (await buyTicket()).wait()
 
                       playersOnline = (await getNumberOfPlayers()).toString()
                   }
@@ -52,49 +54,53 @@ isChainDEV
 
                   // Get winner balance before token transfer
                   const winnerStartingBalance = await getBalance(deployer)
-                  console.log("Winner starting balance:", formatEther(winnerStartingBalance))
 
                   // LotteryStatus should be OPEN
                   assert.equal(await getLotteryStatus(), "0")
 
                   // Requesting random winner
-                  console.log("Requesting random winner...")
-                  const raffleLottery = await getRandomWinner()
-                  //   console.log("raffleLottery", raffleLottery)
-
-                  const performRaffle = await raffleLottery.wait()
-                  console.log("performRaffle", performRaffle)
+                  console.log("Requesting winner")
+                  const txLottery = await getRandomWinner()
+                  const txReceipt = await txLottery.wait()
 
                   // LotteryStatus should be CALCULATING
-                  assert.equal(await getLotteryStatus(), "1")
+                  console.log("Lottery calculating")
+                  await expect(txLottery).to.emit(lottery, "LotteryCalculating")
 
-                  // While CALCULATING random winner should emit RequestedWinner event
-                  await expect(performRaffle).to.emit(lottery, "RequestedWinner")
+                  console.log("Winner picked!")
+                  await expect(txLottery).to.emit(lottery, "WinnerPicked")
 
-                  // Get prize
-                  const prize = await getPrize()
-                  console.log("Prize:", formatEther(prize))
+                  console.log("Prize amount")
+                  await expect(txLottery).to.emit(lottery, "PrizeToTransfer")
 
-                  const calculatedPrize =
-                      ((await getTicketPrice()) * Number(playersOnline) * 75) / 100
+                  console.log("Prize transfer")
+                  await expect(txLottery).to.emit(lottery, "PrizeTransfered")
 
-                  assert.equal(prize.toString(), calculatedPrize.toString())
+                  console.log("Reset lottery")
+                  await expect(txLottery).to.emit(lottery, "UpdateLottery")
 
-                  // Get all players online
-                  //   const onlineAddresses = await getPlayers()
-                  //   console.log("onlineAddresses", onlineAddresses)
+                  // Check Prize calculation
+                  const args = getArgsFromEvent({
+                      events: txReceipt.events,
+                      eventName: "PrizeToTransfer",
+                  })
+
+                  console.log("argsPrize", args.prize.toString())
+
+                  const calculatedPrize = ((await getTicketPrice()) * 2 * 75) / 100
+                  assert.equal(args?.prize?.toString(), calculatedPrize.toString())
 
                   // Check winner
-                  const winner = await getWinner()
-                  console.log("winner:", winner)
-                  assert.equal(winner, deployer)
+                  const actualWinner = await getWinner()
+                  console.log("actualWinner", actualWinner)
+                  assert.equal(actualWinner, winner.address)
 
                   // Winner balance should update with prize
                   const winnerBalance = await getBalance(winner.address)
 
                   assert.equal(
                       winnerBalance.toString(),
-                      winnerStartingBalance.add(prize).toString()
+                      winnerStartingBalance.add(args.prize).toString()
                   )
 
                   // Lottery should reset
